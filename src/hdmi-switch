@@ -1,0 +1,38 @@
+#!/bin/sh
+# copyright: Cyrille Pontvieux
+# license: MIT
+[ $(id -u) -eq 0 ] || exit 1
+hdmi_card=card0-HDMI-A-1
+alsadir=/etc/alsa
+alsarc=/etc/asound.conf
+xrandrdir=/etc/xrandr
+
+DISPLAY=:0
+XAUTHORITY=$(pgrep -lf '/usr/bin/X '|sed -r 's/.*-auth ([^ ]+) .*/\1/')
+LANG=
+export DISPLAY
+export XAUTHORITY
+xauth add $(xauth list $DISPLAY|sed -r 's/^[^ ]+ (.*)/'$(hostname)"\/unix$DISPLAY \1/")
+sleep 1
+
+hdmi_status=$(cat /sys/class/drm/$hdmi_card/status)
+hdmi_modes=$(cat /sys/class/drm/$hdmi_card/modes)
+if [ -n "$hdmi_status" ]; then
+  if [ -e $alsadir/asound-hdmi-${hdmi_status}.conf ]; then
+    if [ "$hdmi_status" = "connected" ]; then
+      alsainfo=$(aplay -l|grep HDMI|head -n1|sed -r 's/card ([0-9]+): .*device ([0-9]+):.*/\1:\2/')
+    else
+      alsainfo=$(aplay -l|grep ^card|grep -v HDMI|head -n1|sed -r 's/card ([0-9]+): .*device ([0-9]+):.*/\1:\2/')
+    fi
+    sed -r 's/CARD/'$(echo $alsainfo|cut -d':' -f1)'/; s/DEV/'$(echo $alsainfo|cut -d':' -f2)'/;' $alsadir/asound-hdmi-${hdmi_status}.conf > $alsarc
+  fi
+  if [ -x $xrandrdir/xrandr-hdmi-${hdmi_status}.sh ]; then
+    [ "$hdmi_status" = "connected" ] && [ -z "$hdmi_modes" ] && exit
+    sh $xrandrdir/xrandr-hdmi-${hdmi_status}.sh
+  fi
+  for script in $(find /etc/hdmi/${hdmi_status}.d -type f -executable); do
+    sh $script
+  done
+else
+  rm -v $alsarc
+fi

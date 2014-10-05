@@ -1,0 +1,31 @@
+#!/bin/sh
+# copyright: Cyrille Pontvieux
+# license: MIT
+DPL1=$1
+DPL2=$2
+[ -n "$DPL2" ] || exit 1
+export >> /var/log/hdmi.log
+WH1=$(xrandr.py|grep ^$DPL1|cut -d' ' -f3,4|sort -run|sed 's/ /x/')
+WH2=$(xrandr.py|grep ^$DPL2|cut -d' ' -f3,4|sort -run|sed 's/ /x/')
+COMMON=
+for wh1 in $WH1; do
+  [ $(echo $wh1|sed 's/x.*//') -lt 800 ] && continue
+  for wh2 in $WH2; do
+    [ $(echo $wh2|sed 's/x.*//') -lt 800 ] && continue
+    if [ $wh1 = $wh2 ]; then
+      COMMON=$wh1
+      break
+    fi
+  done
+  [ -n "$COMMON" ] && break
+done
+if [ -n "$COMMON" ]; then
+  xrandr.py|grep ^$DPL1|cut -d' ' -f2-4|grep "$COMMON"|cut -d' ' -f1|head -n1
+  xrandr.py|grep ^$DPL2|cut -d' ' -f2-4|grep "$COMMON"|cut -d' ' -f1|head -n1
+else
+  # DPL1 is assumed that it can have mode added, DPL2 not
+  # Find the upmost resolution of DPL2 that does not have a 'i' suffix (interlaced)
+  MAX=$(xrandr.py|grep ^$DPL2|cut -d' ' -f2-4|grep -v 'i '|sort -run|cut -d' ' -f1|head -n1)
+  echo "*$MAX" # * indicate that this mode should be added to xrandr
+  echo "$MAX"
+fi

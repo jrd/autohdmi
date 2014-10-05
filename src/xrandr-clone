@@ -1,0 +1,14 @@
+#!/bin/sh
+# copyright: Cyrille Pontvieux
+# license: MIT
+DPL1=$1
+DPL2=$2
+[ -n "$DPL2" ] || exit 1
+BEST=$(xrandr-find-best-mode-for-clone $DPL1 $DPL2)
+RES1=$(echo "$BEST"|sed -n '1p')
+RES2=$(echo "$BEST"|sed -n '2p')
+if echo "$RES1"|grep -q '^\*'; then
+  RES1=$(echo "$RES1"|sed 's/\*//')
+  xrandr --addmode $DPL1 $RES1
+fi
+xrandr --output $DPL1 --mode $RES1 --output $DPL2 --mode $RES2 --same-as $DPL1

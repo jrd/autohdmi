@@ -1,0 +1,30 @@
+AutoHDMI
+========
+
+Udev rule and scripts to automatically enable your HDMI output when you plug the wire.
+The udev rule launch a script that does 3 tasks:
+- Tell Alsa (and other daemon based on Alsa) that the default sound should go through HDMI
+- Ask XRandR to find a suitable mode to clone the display through HDMI
+- run any executable script in the /etc/connected.d/ or /etc/disconnected.d/ directories.
+
+You could edit /etc/alsa/asound-hdmi-connected.conf and /etc/alsa/asound-hdmi-disconnected.conf to adjust it with your settings.
+`CARD` and `DEV` variable will be replaced by your card/device match HDMI output or regular one.
+This detection is done by `hdmi-switch` and you can modify it if the detection is not good enough.
+Please send me a patch or pull-request if you find a better detection scheme.
+
+Adjust /etc/xrandr/xrandr-hdmi-disconnect.sh to match your regular display settings.
+By default, it uses the primary ouptput with recommanded resolution.
+
+You can also ajust /etc/xrandr/xrandr-hdmi-connect.sh when your HDMI is connected.
+By default, it uses xrandr-clone that tries to clone your primary display using a common resolution.
+
+`xrandr-clone` uses `xrandr-find-best-mode-for-clone` that uses `xrandr.py`.
+The later depends on python-xlib. Be sure to have the latest version.
+  pip install --upgrade svn+https://python-xlib.svn.sourceforge.net/svnroot/python-xlib/trunk/
+Note: subversion/svn is needed to complete the command. You may need to run this as root or use `sudo`.
+
+--
+Please forkme, enhance, do pull request, send patches.
+Thanks
+
+P.S. See LICENSE file for the license (MIT).
